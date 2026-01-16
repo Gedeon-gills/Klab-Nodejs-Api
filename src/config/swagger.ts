@@ -19,7 +19,7 @@ const options: swaggerJsdoc.Options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.example.com',
+        url: 'https://klab-nodejs-api.onrender.com',
         description: 'Production server',
       },
     ],
