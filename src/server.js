@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import connectDB from "./config/database.js";
+import connectDB from './config/database.js';
 import authRouter from "./routes/auth.js";
 import productRouter from "./routes/product.js";
 import cartRouter from "./routes/cart.js";
