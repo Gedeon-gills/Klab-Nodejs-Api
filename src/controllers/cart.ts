@@ -8,7 +8,34 @@ const getUserId = (req: any) => {
 };
 
 //GET ALL CARTS(admin)
-
+/**
+ * @swagger
+ * /api/v1/carts:
+ *   get:
+ *     summary: Get all carts (Admin only)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All carts retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: All carts retrieved successfully
+ *                 carts:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       403:
+ *         description: Access denied (not an admin)
+ *       500:
+ *         description: Server error
+ */
 export const getAllCarts = async (req: any, res: Response) => {
     try {
         // Optional: only allow admins
@@ -27,7 +54,31 @@ export const getAllCarts = async (req: any, res: Response) => {
 };
 
 //GET CART BY ID 
-
+/**
+ * @swagger
+ * /api/v1/carts/{id}:
+ *   get:
+ *     summary: Get a cart by ID (Owner only)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Cart ID
+ *     responses:
+ *       200:
+ *         description: Cart retrieved successfully
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Server error
+ */
 export const getCartById = async (req: Request, res: Response) => {
     try {
         const userId = getUserId(req);
@@ -47,7 +98,38 @@ export const getCartById = async (req: Request, res: Response) => {
 };
 
 //CREATE A NEW CART
-
+/**
+ * @swagger
+ * /api/v1/carts:
+ *   post:
+ *     summary: Create a new cart for the logged-in user
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *     responses:
+ *       201:
+ *         description: Cart created successfully
+ *       400:
+ *         description: Cart already exists for user
+ *       500:
+ *         description: Server error
+ */
 export const createCart = async (req: Request, res: Response) => {
     try {
         const userId = getUserId(req);
@@ -71,7 +153,37 @@ export const createCart = async (req: Request, res: Response) => {
 };
 
 //UPDATE AN EXISTING CART
-
+/**
+ * @swagger
+ * /api/v1/carts/{id}:
+ *   put:
+ *     summary: Update a cart (Owner only)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Cart ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Cart updated successfully
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Server error
+ */
 export const updateCart = async (req: Request, res: Response) => {
     try {
         const userId = getUserId(req);
@@ -94,7 +206,31 @@ export const updateCart = async (req: Request, res: Response) => {
 };
 
 //DELETE A CART
-
+/**
+ * @swagger
+ * /api/v1/carts/{id}:
+ *   delete:
+ *     summary: Delete a cart (Owner only)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Cart ID
+ *     responses:
+ *       200:
+ *         description: Cart deleted successfully
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Cart not found
+ *       500:
+ *         description: Server error
+ */
 export const deleteCart = async (req: Request, res: Response) => {
     try {
         const userId = getUserId(req);
