@@ -1,5 +1,26 @@
 import Product from "../models/product.model.js";
 //GET ALL PRODUCTS
+/**
+ * @swagger
+ * /api/v1/products:
+ *   get:
+ *     summary: Get all products
+ *     tags: [Product]
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Failed to fetch products
+ */
 export const getProducts = async (req, res) => {
     try {
         const products = await Product.find();
@@ -10,6 +31,27 @@ export const getProducts = async (req, res) => {
     }
 };
 //GET A SINGLE PRODUCT BY ID
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   get:
+ *     summary: Get a single product by ID
+ *     tags: [Product]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Product numeric ID
+ *     responses:
+ *       200:
+ *         description: Product retrieved successfully
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Failed to fetch product
+ */
 export const getProductById = async (req, res) => {
     try {
         const product = await Product.findOne({ id: Number(req.params.id) });
@@ -24,6 +66,48 @@ export const getProductById = async (req, res) => {
 };
 //PROTECTED
 //CREATE A NEW PRODUCT
+/**
+ * @swagger
+ * /api/v1/products:
+ *   post:
+ *     summary: Create a new product (Admin only)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - price
+ *             properties:
+ *               id:
+ *                 type: number
+ *                 example: 101
+ *               name:
+ *                 type: string
+ *                 example: iPhone 15
+ *               description:
+ *                 type: string
+ *                 example: Latest Apple smartphone
+ *               price:
+ *                 type: number
+ *                 example: 1200
+ *               category:
+ *                 type: string
+ *                 example: Electronics
+ *               stock:
+ *                 type: number
+ *                 example: 50
+ *     responses:
+ *       201:
+ *         description: Product created successfully
+ *       400:
+ *         description: Product creation failed
+ */
 export const createProduct = async (req, res) => {
     try {
         const product = await Product.create(req.body);
@@ -39,6 +123,35 @@ export const createProduct = async (req, res) => {
     }
 };
 //UPDATE AN EXISTING PRODUCT
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   put:
+ *     summary: Update an existing product (Admin only)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Product numeric ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *       404:
+ *         description: Product not found
+ *       400:
+ *         description: Product update failed
+ */
 export const updateProduct = async (req, res) => {
     try {
         const product = await Product.findOneAndUpdate({ id: Number(req.params.id) }, req.body, { new: true });
@@ -57,6 +170,29 @@ export const updateProduct = async (req, res) => {
     }
 };
 //DELETE A PRODUCT
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   delete:
+ *     summary: Delete a product (Admin only)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Product numeric ID
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Error deleting product
+ */
 export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findOneAndDelete({
