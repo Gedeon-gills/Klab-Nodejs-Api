@@ -1,40 +1,9 @@
 import { Request, Response } from 'express';
-import  IUser  from '../models/user.model.js';
+import IUser from '../models/user.model.js';
 import { generateToken } from '../utils/jwt.helper.js';
 import crypto from 'crypto';
 
-
-/**
- * @swagger
- * /api/v1/endpoint:              ← Endpoint path
- *   post:                         ← HTTP method
- *     summary: Description        ← Short description
- *     tags: [Category]            ← Group by category
- *     security:                   ← Authentication
- *       - bearerAuth: []
- *     parameters:                 ← URL/Query params
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:                ← Request data
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               field:
- *                 type: string
- *     responses:                  ← Response codes
- *       200:
- *         description: Success
- *       400:
- *         description: Bad Request
- */
-
-// POST /auth/register
+// REGISTER USER
 /**
  * @swagger
  * /api/v1/auth/register:
@@ -67,31 +36,6 @@ import crypto from 'crypto';
  *     responses:
  *       201:
  *         description: User registered successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: User registered successfully
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       type: object
- *                       properties:
- *                         _id:
- *                           type: string
- *                         name:
- *                           type: string
- *                         email:
- *                           type: string
- *                     token:
- *                       type: string
  *       400:
  *         description: Missing required fields
  *       409:
@@ -100,39 +44,26 @@ import crypto from 'crypto';
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
+    if (!name || !email || !password)
+      return res.status(400).json({ error: 'All fields are required' });
 
     const existingUser = await IUser.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ error: "User already exists" });
-    }
+    if (existingUser)
+      return res.status(409).json({ error: 'User already exists' });
 
-    const user = await IUser.create({
-      name,
-      email,
-      password, // hashed in model
-      role: "customer", // default
-    });
-
+    const user = await IUser.create({ name, email, password, role: 'customer' });
     const token = generateToken(user._id.toString(), user.role);
-
     const { password: _, ...userResponse } = user.toObject();
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      data: { user: userResponse, token },
-    });
+    res.status(201).json({ success: true, message: 'User registered successfully', data: { user: userResponse, token } });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// POST /auth/login
-
+/* ==========================
+   LOGIN USER
+   ========================== */
 /**
  * @swagger
  * /api/v1/auth/login:
@@ -160,162 +91,79 @@ export const register = async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 message:
- *                   type: string
- *                   example: Login successful
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *                 user:
- *                   type: object
  *       401:
  *         description: Invalid credentials
  */
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ error: 'Email and password required' });
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
-    }
-
-    const user = await IUser.findOne({ email }).select("+password");
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ error: "Account is deactivated" });
-    }
+    const user = await IUser.findOne({ email }).select('+password');
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user.isActive) return res.status(403).json({ error: 'Account is deactivated' });
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     const token = generateToken(user._id.toString(), user.role);
     const { password: _, ...userResponse } = user.toObject();
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: { user: userResponse, token },
-    });
+    res.status(200).json({ success: true, message: 'Login successful', data: { user: userResponse, token } });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// GET /auth/me  (ALL ROLES – SELF)
+/* ==========================
+   GET CURRENT USER PROFILE
+   ========================== */
 /**
  * @swagger
  * /api/v1/auth/me:
  *   get:
- *     summary: Get the currently logged-in user's profile
+ *     summary: Get current user's profile
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Successfully retrieved user profile
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                       example: 63f0c4e2b2e4c123456789ab
- *                     name:
- *                       type: string
- *                       example: John Doe
- *                     email:
- *                       type: string
- *                       format: email
- *                       example: john@example.com
- *                     role:
- *                       type: string
- *                       enum: [user, admin, customer]
- *                       example: customer
- *                     isActive:
- *                       type: boolean
- *                       example: true
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: 2026-01-15T09:00:00.000Z
- *                     updatedAt:
- *                       type: string
- *                       format: date-time
- *                       example: 2026-01-15T09:00:00.000Z
+ *         description: User profile retrieved
  *       401:
- *         description: Unauthorized – missing or invalid JWT
+ *         description: Unauthorized
  */
-
 export const getMe = async (req: any, res: Response) => {
-  res.status(200).json({
-    success: true,
-    data: req.user,
-  });
+  res.status(200).json({ success: true, data: req.user });
 };
 
-// POST /auth/logout
+/* ==========================
+   LOGOUT USER
+   ========================== */
 /**
  * @swagger
  * /api/v1/auth/logout:
  *   post:
- *     summary: Logout the currently logged-in user
+ *     summary: Logout user
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Logout successful
- *       401:
- *         description: Unauthorized – missing or invalid JWT
  */
 export const logout = async (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: "Logout successful",
-  });
+  res.status(200).json({ success: true, message: 'Logout successful' });
 };
 
-/* ======================================================
-   PROFILE (SELF ONLY)
-   ====================================================== */
-
-// PUT /auth/me
+/* ==========================
+   UPDATE PROFILE
+   ========================== */
 /**
  * @swagger
  * /api/v1/auth/profile:
  *   put:
- *     summary: Update the currently logged-in user's profile
+ *     summary: Update current user's profile
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
@@ -336,143 +184,34 @@ export const logout = async (_req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Profile updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Profile updated successfully
- *                 data:
- *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                       example: 63f0c4e2b2e4c123456789ab
- *                     name:
- *                       type: string
- *                       example: John Doe
- *                     email:
- *                       type: string
- *                       format: email
- *                       example: john@example.com
- *                     role:
- *                       type: string
- *                       enum: [user, admin, customer]
- *                       example: customer
- *                     isActive:
- *                       type: boolean
- *                       example: true
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: 2026-01-15T09:00:00.000Z
- *                     updatedAt:
- *                       type: string
- *                       format: date-time
- *                       example: 2026-01-15T10:00:00.000Z
  *       500:
  *         description: Server error
  */
 export const updateMyProfile = async (req: any, res: Response) => {
   try {
-    const updatedUser = await IUser.findByIdAndUpdate(
-      req.user._id,
-      {
-        name: req.body.name,
-        email: req.body.email,
-      },
-      { new: true }
-    ).select("-password");
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      data: updatedUser,
-    });
+    const updatedUser = await IUser.findByIdAndUpdate(req.user._id, { name: req.body.name, email: req.body.email }, { new: true }).select('-password');
+    res.status(200).json({ success: true, message: 'Profile updated successfully', data: updatedUser });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-/* ======================================================
+/* ==========================
    PASSWORD MANAGEMENT
-   ====================================================== */
-
-// POST /auth/change-password
-/**
- * @swagger
- * /api/v1/auth/change-password:
- *   post:
- *     summary: Change password for the currently logged-in user
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - currentPassword
- *               - newPassword
- *             properties:
- *               currentPassword:
- *                 type: string
- *                 format: password
- *                 example: oldPassword123
- *               newPassword:
- *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: newPassword456
- *     responses:
- *       200:
- *         description: Password changed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Password changed successfully
- *       401:
- *         description: Unauthorized – current password is incorrect or JWT missing
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
+   ========================== */
 export const changePassword = async (req: any, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
-    const user = await IUser.findById(req.user._id).select("+password");
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const user = await IUser.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Current password incorrect" });
-    }
+    if (!isMatch) return res.status(401).json({ error: 'Current password incorrect' });
 
     user.password = newPassword;
     await user.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully",
-    });
+    res.status(200).json({ success: true, message: 'Password changed successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
