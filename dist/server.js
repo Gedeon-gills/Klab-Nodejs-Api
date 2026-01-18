@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+import cors from "cors";
 import connectDB from './config/database.js';
 import authRouter from "./routes/auth.js";
 import productRouter from "./routes/product.js";
@@ -12,6 +13,8 @@ import swaggerUi from 'swagger-ui-express';
 connectDB();
 const app = express();
 app.use(express.json());
+// ✅ Enable CORS for all routes
+app.use(cors());
 // logging middleware
 app.use(logger);
 // Swagger Documentation Route
