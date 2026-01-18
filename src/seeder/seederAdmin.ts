@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import IUser from "../models/user.model.js";
+import IUser from "../models/user.model.js"; 
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
