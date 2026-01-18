@@ -6,7 +6,7 @@ dotenv.config();
 const seedAdmin = async () => {
     try {
         // 1️⃣ Connect to DB
-        await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/mydb");
+        await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://Gedeon:wakasso01@klab-cluster0.bx8bxxa.mongodb.net/?appName=klab-Cluster0");
         console.log("✅ Connected to MongoDB");
         // 2️⃣ Check if admin already exists
         const existingAdmin = await IUser.findOne({ role: "admin" });
