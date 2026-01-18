@@ -3,13 +3,19 @@ import Category from '../models/categorymodel.js';
 //GET ALL CATEGORIES
 /**
  * @swagger
+ * tags:
+ *   name: Category
+ *   description: Product categories management
+ */
+/**
+ * @swagger
  * /api/v1/categories:
  *   get:
  *     summary: Get all categories
  *     tags: [Category]
  *     responses:
  *       200:
- *         description: All categories retrieved successfully
+ *         description: Categories retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -17,27 +23,23 @@ import Category from '../models/categorymodel.js';
  *               properties:
  *                 message:
  *                   type: string
- *                   example: All categories retrieved successfully
  *                 categories:
  *                   type: array
  *                   items:
- *                     type: object
+ *                     $ref: '#/components/schemas/Category'
  *       500:
  *         description: Server error
  */
-export const getAllCategories = async (req, res) => {
+export const getAllCategories = async (_req, res) => {
     try {
-        const categories = await Category.find();
+        const categories = await Category.find().sort({ createdAt: -1 });
         return res.status(200).json({
             message: "All categories retrieved successfully",
             categories,
         });
     }
-    catch (error) {
-        return res.status(500).json({
-            message: "Error retrieving categories",
-            error,
-        });
+    catch {
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 //PUBLIC
@@ -46,41 +48,36 @@ export const getAllCategories = async (req, res) => {
  * @swagger
  * /api/v1/categories/{id}:
  *   get:
- *     summary: Get a single category by ID
+ *     summary: Get category by ID
  *     tags: [Category]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: number
- *         description: Category numeric ID
+ *           type: string
+ *         description: MongoDB category ID
  *     responses:
  *       200:
  *         description: Category retrieved successfully
  *       404:
  *         description: Category not found
- *       500:
- *         description: Server error
+ *       400:
+ *         description: Invalid ID
  */
 export const getCategoryById = async (req, res) => {
     try {
-        const category = await Category.findOne({ id: Number(req.params.id) });
+        const category = await Category.findById(req.params.id);
         if (!category) {
-            return res.status(404).json({
-                message: "Category not found"
-            });
+            return res.status(404).json({ message: "Category not found" });
         }
         return res.status(200).json({
             message: "Category retrieved successfully",
             category,
         });
     }
-    catch (error) {
-        return res.status(500).json({
-            message: "Error retrieving category",
-            error,
-        });
+    catch {
+        return res.status(400).json({ message: "Invalid category ID" });
     }
 };
 //PROTECTED
@@ -98,37 +95,33 @@ export const getCategoryById = async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               id:
- *                 type: number
- *                 example: 1
- *               name:
- *                 type: string
- *                 example: Electronics
- *               description:
- *                 type: string
- *                 example: Devices and electronic items
+ *             $ref: '#/components/schemas/CategoryInput'
  *     responses:
  *       201:
  *         description: Category created successfully
  *       400:
- *         description: Validation or creation error
+ *         description: Validation error
+ *       409:
+ *         description: Category already exists
  */
 export const createCategory = async (req, res) => {
     try {
-        const category = await Category.create(req.body);
+        const { name, description } = req.body;
+        if (!name) {
+            return res.status(400).json({ message: "Category name is required" });
+        }
+        const exists = await Category.findOne({ name });
+        if (exists) {
+            return res.status(409).json({ message: "Category already exists" });
+        }
+        const category = await Category.create({ name, description });
         return res.status(201).json({
             message: "Category created successfully",
             category,
         });
     }
-    catch (error) {
-        return res.status(400).json({
-            message: error.message || "Category creation failed",
-        });
+    catch {
+        return res.status(500).json({ message: "Category creation failed" });
     }
 };
 //PROTECTED
@@ -137,7 +130,7 @@ export const createCategory = async (req, res) => {
  * @swagger
  * /api/v1/categories/{id}:
  *   put:
- *     summary: Update an existing category (Admin only)
+ *     summary: Update a category (Admin only)
  *     tags: [Category]
  *     security:
  *       - bearerAuth: []
@@ -146,32 +139,22 @@ export const createCategory = async (req, res) => {
  *         name: id
  *         required: true
  *         schema:
- *           type: number
- *         description: Category numeric ID
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: Home Appliances
- *               description:
- *                 type: string
- *                 example: Appliances for home use
+ *             $ref: '#/components/schemas/CategoryInput'
  *     responses:
  *       200:
  *         description: Category updated successfully
  *       404:
  *         description: Category not found
- *       400:
- *         description: Update failed
  */
 export const updateCategory = async (req, res) => {
     try {
-        const category = await Category.findOneAndUpdate({ id: Number(req.params.id) }, req.body, { new: true });
+        const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!category) {
             return res.status(404).json({ message: "Category not found" });
         }
@@ -180,10 +163,8 @@ export const updateCategory = async (req, res) => {
             category,
         });
     }
-    catch (error) {
-        return res.status(400).json({
-            message: error.message || "Category update failed",
-        });
+    catch {
+        return res.status(400).json({ message: "Category update failed" });
     }
 };
 //PROTECTED
@@ -201,31 +182,22 @@ export const updateCategory = async (req, res) => {
  *         name: id
  *         required: true
  *         schema:
- *           type: number
- *         description: Category numeric ID
+ *           type: string
  *     responses:
  *       200:
  *         description: Category deleted successfully
  *       404:
  *         description: Category not found
- *       500:
- *         description: Server error
  */
 export const deleteCategory = async (req, res) => {
     try {
-        const category = await Category.findOneAndDelete({ id: Number(req.params.id) });
+        const category = await Category.findByIdAndDelete(req.params.id);
         if (!category) {
             return res.status(404).json({ message: "Category not found" });
         }
-        return res.status(200).json({
-            message: "Category deleted successfully",
-            category,
-        });
+        return res.status(200).json({ message: "Category deleted successfully" });
     }
-    catch (error) {
-        return res.status(500).json({
-            message: "Error deleting category",
-            error,
-        });
+    catch {
+        return res.status(400).json({ message: "Category deletion failed" });
     }
 };

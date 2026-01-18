@@ -6,7 +6,11 @@ import crypto from 'crypto';
  * @swagger
  * /api/v1/auth/register:
  *   post:
- *     summary: Register a new user
+ *     summary: Register a new customer account
+ *     description: >
+ *       Registers a new user.
+ *       ⚠️ Role is always forced to `customer`.
+ *       Users cannot self-register as admin or vendor.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -34,23 +38,68 @@ import crypto from 'crypto';
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                           example: customer
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                     token:
+ *                       type: string
  *       400:
  *         description: Missing required fields
  *       409:
  *         description: User already exists
+ *       500:
+ *         description: Server error
  */
 export const register = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        if (!name || !email || !password)
-            return res.status(400).json({ error: 'All fields are required' });
+        if (!name || !email || !password) {
+            return res.status(400).json({ error: "All fields are required" });
+        }
         const existingUser = await IUser.findOne({ email });
-        if (existingUser)
-            return res.status(409).json({ error: 'User already exists' });
-        const user = await IUser.create({ name, email, password, role: 'customer' });
+        if (existingUser) {
+            return res.status(409).json({ error: "User already exists" });
+        }
+        // 🚫 NEVER trust role from request
+        const user = await IUser.create({
+            name,
+            email,
+            password,
+            role: "customer",
+        });
         const token = generateToken(user._id.toString(), user.role);
         const { password: _, ...userResponse } = user.toObject();
-        res.status(201).json({ success: true, message: 'User registered successfully', data: { user: userResponse, token } });
+        res.status(201).json({
+            success: true,
+            message: "User registered successfully",
+            data: { user: userResponse, token },
+        });
     }
     catch (error) {
         res.status(500).json({ error: error.message });
@@ -371,7 +420,10 @@ export const resetPassword = async (req, res) => {
  * @swagger
  * /api/v1/auth/users/{id}:
  *   put:
- *     summary: Admin updates a user's details
+ *     summary: Admin updates a user (role, status, profile)
+ *     description: >
+ *       Admin-only endpoint.
+ *       Allows updating user role, activation status, name, or email.
  *     tags: [User Management]
  *     security:
  *       - bearerAuth: []
@@ -398,8 +450,8 @@ export const resetPassword = async (req, res) => {
  *                 example: jane@example.com
  *               role:
  *                 type: string
- *                 enum: [user, admin, customer]
- *                 example: customer
+ *                 enum: [customer, vendor, admin]
+ *                 example: admin
  *               isActive:
  *                 type: boolean
  *                 example: true
@@ -428,7 +480,7 @@ export const resetPassword = async (req, res) => {
  *                       type: string
  *                     role:
  *                       type: string
- *                       enum: [user, admin, customer]
+ *                       enum: [customer, vendor, admin]
  *                     isActive:
  *                       type: boolean
  *                     createdAt:
@@ -437,6 +489,12 @@ export const resetPassword = async (req, res) => {
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *       400:
+ *         description: Invalid role
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden – Admin access required
  *       404:
  *         description: User not found
  *       500:
@@ -444,7 +502,19 @@ export const resetPassword = async (req, res) => {
  */
 export const adminUpdateUser = async (req, res) => {
     try {
-        const user = await IUser.findByIdAndUpdate(req.params.id, req.body, { new: true }).select("-password");
+        const allowedFields = ["name", "email", "role", "isActive"];
+        const updates = {};
+        for (const key of allowedFields) {
+            if (req.body[key] !== undefined) {
+                updates[key] = req.body[key];
+            }
+        }
+        // Validate role explicitly
+        if (updates.role &&
+            !["customer", "vendor", "admin"].includes(updates.role)) {
+            return res.status(400).json({ error: "Invalid role" });
+        }
+        const user = await IUser.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).select("-password");
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }

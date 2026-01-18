@@ -1,12 +1,20 @@
 import express from 'express';
 import { getAllCategories, getCategoryById, createCategory, updateCategory, deleteCategory } from '../controllers/category.js';
 
+import { authenticate } from "../middleware/auth.js";
+import { authorize } from "../middleware/authorize.js";
+
 const router = express.Router();
 
-router.get('/', getAllCategories);
-router.get('/:id', getCategoryById);
-router.post('/', createCategory);
-router.put('/:id', updateCategory);
-router.delete('/:id', deleteCategory);
+//PUBLIC ROUTES
+
+router.get("/", getAllCategories);
+router.get("/:id", getCategoryById);
+
+//ADMIN ONLY ROUTES
+
+router.post("/", authenticate, authorize("admin"), createCategory);
+router.put("/:id", authenticate, authorize("admin"), updateCategory);
+router.delete("/:id", authenticate, authorize("admin"), deleteCategory);
 
 export default router;
