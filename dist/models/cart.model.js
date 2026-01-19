@@ -11,20 +11,7 @@ const CartItemSchema = new Schema({
     }
 });
 const CartSchema = new Schema({
-    id: {
-        type: Number,
-        required: [true, 'Cart ID is required'],
-        unique: true
-    },
-    userId: {
-        type: Number,
-        required: [true, 'User ID is required']
-    },
-    items: {
-        type: [CartItemSchema],
-        default: []
-    }
-}, {
-    timestamps: true // Automatically adds createdAt and updatedAt
-});
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    items: { type: [CartItemSchema], default: [] }
+}, { timestamps: true });
 export default mongoose.model('Cart', CartSchema);

@@ -1,7 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export interface Product extends Document{
-  id: number;
+export interface Product extends Document {
   name: string;
   price: number;
   description?: string;
@@ -10,8 +9,7 @@ export interface Product extends Document{
 }
 
 export interface Cart extends Document {
-  id: number;
-  userId: number;
+  userId: Types.ObjectId; 
   items: CartItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -35,21 +33,8 @@ const CartItemSchema = new Schema<CartItem>({
 });
 
 const CartSchema = new Schema<Cart>({
-  id: {
-    type: Number,
-    required: [true, 'Cart ID is required'],
-    unique: true
-  },
-  userId: {
-    type: Number,
-    required: [true, 'User ID is required']
-  },
-  items: {
-    type: [CartItemSchema],
-    default: []
-  }
-}, {
-  timestamps: true  // Automatically adds createdAt and updatedAt
-});
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  items: { type: [CartItemSchema], default: [] }
+}, { timestamps: true });
 
 export default mongoose.model<Cart>('Cart', CartSchema);

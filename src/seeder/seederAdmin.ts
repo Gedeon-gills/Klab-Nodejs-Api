@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+/*import mongoose from "mongoose";
 import IUser from "../models/user.model.js"; 
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
@@ -41,4 +41,4 @@ const seedAdmin = async () => {
   }
 };
 
-seedAdmin();
+seedAdmin();*/
