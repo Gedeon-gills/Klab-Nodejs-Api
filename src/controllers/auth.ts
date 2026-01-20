@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import IUser from '../models/user.model.js';
+import { sendWelcomeEmail } from "../services/email.service.js";
 import { generateToken } from '../utils/jwt.helper.js';
 import crypto from 'crypto';
 
@@ -82,10 +83,12 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
+    // Validate input
     if (!name || !email || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
+    // Check if user already exists
     const existingUser = await IUser.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ error: "User already exists" });
@@ -99,16 +102,31 @@ export const register = async (req: Request, res: Response) => {
       role: "customer",
     });
 
+    // Generate token
     const token = generateToken(user._id.toString(), user.role);
+
+    // 🔔 Send welcome email (DO NOT await)
+    sendWelcomeEmail(email, name).catch((err) => {
+      console.error("Failed to send welcome email:", err);
+      // Registration should NOT fail if email fails
+    });
+
+    // Remove password from response
     const { password: _, ...userResponse } = user.toObject();
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      data: { user: userResponse, token },
+      message: "User registered successfully. Check your email!",
+      data: {
+        user: userResponse,
+        token,
+      },
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 

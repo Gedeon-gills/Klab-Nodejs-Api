@@ -126,8 +126,13 @@ export const createCategory = async (req: Request, res: Response) => {
       message: "Category created successfully",
       category,
     });
-  } catch {
-    return res.status(500).json({ message: "Category creation failed" });
+  } catch (error) {
+    console.error("CREATE CATEGORY ERROR:", error); 
+
+    return res.status(500).json({
+      message: "Category creation failed",
+      error: error instanceof Error ? error.message : error,
+    });
   }
 };
 

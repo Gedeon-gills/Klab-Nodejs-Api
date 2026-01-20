@@ -73,55 +73,91 @@ export const getProductById = async (req: Request, res: Response) => {
 //CREATE A NEW PRODUCT
 /**
  * @swagger
- * /api/v1/products:
+ * /api/products:
  *   post:
- *     summary: Create a new product (Admin only)
- *     tags: [Product]
- *     security:
- *       - bearerAuth: []
+ *     summary: Create a new product with images
+ *     tags:
+ *       - Products
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - name
  *               - price
  *               - category
- *               - categoryId
+ *               - quantity
  *             properties:
  *               name:
  *                 type: string
  *                 example: iPhone 15
- *               description:
- *                 type: string
- *                 example: Latest Apple smartphone
  *               price:
  *                 type: number
  *                 example: 1200
+ *               description:
+ *                 type: string
+ *                 example: Latest Apple smartphone
  *               category:
  *                 type: string
  *                 example: Electronics
- *               categoryId:
+ *               quantity:
  *                 type: number
- *                 example: 1
+ *                 example: 10
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
  *     responses:
  *       201:
  *         description: Product created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Product created successfully with images
+ *                 product:
+ *                   type: object
  *       400:
  *         description: Product creation failed
  */
-export const createProduct = async (req: Request, res: Response) => {
+
+export const createProductWithImages = async (req: Request, res: Response) => {
   try {
-    const product = await Product.create(req.body);
+    const { name, price, description, category, quantity } = req.body;
+
+    const files = req.files as Express.Multer.File[];
+
+    const images = files
+      ? files.map((file) => `/uploads/${file.filename}`)
+      : [];
+
+    const product = await Product.create({
+      name,
+      price,
+      description,
+      category,
+      quantity,
+      images,
+      inStock: quantity > 0,
+    });
 
     return res.status(201).json({
-      message: "Product created successfully",
+      success: true,
+      message: "Product created successfully with images",
       product,
     });
   } catch (error: any) {
     return res.status(400).json({
+      success: false,
       message: error.message || "Product creation failed",
     });
   }

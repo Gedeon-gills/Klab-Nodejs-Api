@@ -13,7 +13,7 @@ router.get("/:id", getCategoryById);
 
 //ADMIN ONLY ROUTES
 
-router.post("/", authenticate, authorize("admin"), createCategory);
+router.post("/", createCategory);
 router.put("/:id", authenticate, authorize("admin"), updateCategory);
 router.delete("/:id", authenticate, authorize("admin"), deleteCategory);
 
