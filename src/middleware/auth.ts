@@ -4,7 +4,7 @@ import { verifyToken } from "../utils/jwt.helper.js";
 export interface AuthRequest extends Request {
   user?: {
     _id: string;
-    role: string;
+    role: "admin" | "vendor" | "customer";
   };
 }
 

@@ -29,7 +29,7 @@ apiV1.use('/products', productRouter);
 apiV1.use('/carts', cartRouter);
 apiV1.use('/categories', categoryRouter);
 app.use('/api/v1', apiV1);
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is running: http://localhost:${PORT}`);
 });

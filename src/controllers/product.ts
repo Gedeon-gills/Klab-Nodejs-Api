@@ -88,10 +88,9 @@ export const getProductById = async (req: Request, res: Response) => {
  *             required:
  *               - name
  *               - price
+ *               - category
+ *               - categoryId
  *             properties:
- *               id:
- *                 type: number
- *                 example: 101
  *               name:
  *                 type: string
  *                 example: iPhone 15
@@ -104,9 +103,9 @@ export const getProductById = async (req: Request, res: Response) => {
  *               category:
  *                 type: string
  *                 example: Electronics
- *               stock:
+ *               categoryId:
  *                 type: number
- *                 example: 50
+ *                 example: 1
  *     responses:
  *       201:
  *         description: Product created successfully

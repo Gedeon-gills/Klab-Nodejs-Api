@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Order from "../models/order.model.js";
+import Cart from '../models/cart.model.js';
 
 
   //CREATE ORDER (USER)
@@ -7,79 +8,61 @@ import Order from "../models/order.model.js";
  * @swagger
  * /api/v1/orders:
  *   post:
- *     summary: Create a new order
+ *     summary: Create a new order from user's cart
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - items
- *               - totalAmount
- *               - paymentMethod
- *             properties:
- *               items:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     productId:
- *                       type: number
- *                       example: 101
- *                     quantity:
- *                       type: number
- *                       example: 2
- *               totalAmount:
- *                 type: number
- *                 example: 250
- *               paymentMethod:
- *                 type: string
- *                 example: card
  *     responses:
  *       201:
  *         description: Order created successfully
  *       400:
- *         description: Missing required fields
+ *         description: Cart is empty
  *       401:
  *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
-
-    const { items, totalAmount, paymentMethod } = req.body;
-
-    if (!items || !totalAmount || !paymentMethod) {
-      return res.status(400).json({ message: "Missing required fields" });
+    //  Get user ID from JWT
+    const userId = (req as any).user?._id;  
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    //  Find user's cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
     }
 
-    // Generate numeric order ID
+    //  Calculate total amount
+    const totalAmount = cart.items.reduce((sum, item) => {
+      return sum + item.quantity * (item as any).price || 0; // price should be fetched from product if needed
+    }, 0);
+
+    //  Generate numeric order ID
     const lastOrder = await Order.findOne().sort({ id: -1 });
     const nextOrderId = lastOrder ? lastOrder.id + 1 : 1;
 
+    //  Create order
     const order = await Order.create({
       id: nextOrderId,
       userId,
-      items,
+      items: cart.items, // copy all cart items
       totalAmount,
-      paymentMethod,
-      status: "pending",
+      paymentMethod: 'cart', // or ask user later
+      status: 'pending',
       isPaid: false,
     });
 
+    // Clear user's cart
+    cart.items = [];
+    await cart.save();
+
     return res.status(201).json({
-      message: "Order created successfully",
+      message: 'Order created successfully',
       order,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Order creation failed",
-      error: error.message,
-    });
+    return res.status(500).json({ message: 'Order creation failed', error: error.message });
   }
 };
 

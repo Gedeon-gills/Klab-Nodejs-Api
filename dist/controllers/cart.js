@@ -114,20 +114,42 @@ export const getCartById = async (req, res) => {
  *                   type: object
  *                   properties:
  *                     productId:
- *                       type: string
+ *                       type: number
+ *                       description: ID of the product
+ *                       example: 123
  *                     quantity:
  *                       type: number
+ *                       description: Quantity of the product
+ *                       example: 2
  *     responses:
  *       201:
  *         description: Cart created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cart created successfully
+ *                 cart:
+ *                   $ref: '#/components/schemas/Cart'
  *       400:
  *         description: Cart already exists for user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cart already exists for user
  *       500:
  *         description: Server error
  */
 export const createCart = async (req, res) => {
     try {
-        const userId = getUserId(req);
+        const userId = req.body.userId;
         // Check if user already has a cart
         let cart = await Cart.findOne({ userId });
         if (cart) {
