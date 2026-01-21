@@ -41,10 +41,10 @@ const ProductSchema = new Schema<IProduct>(
       type: Number,
       default: 1,
     },
-    images: {
-      type: [String],
+    images: [{
+      type: String,
       default: []
-    }
+    }]
   },
   { timestamps: true }
 );

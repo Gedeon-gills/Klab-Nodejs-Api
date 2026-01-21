@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import Product from "../models/product.model.js";
+import claudinary from "../config/claudinary.js";
+
 
 
 //GET ALL PRODUCTS
@@ -134,11 +136,20 @@ export const createProductWithImages = async (req: Request, res: Response) => {
   try {
     const { name, price, description, category, quantity } = req.body;
 
-    const files = req.files as Express.Multer.File[];
 
-    const images = files
-      ? files.map((file) => `/uploads/${file.filename}`)
-      : [];
+    console.log(req.files);
+    
+
+  const Images: any[] = [];
+
+if (req.files) {
+  for (const file of req.files as any[]) {
+    const imageUrl = await claudinary.uploader.upload(file.path);
+    Images.push(imageUrl.secure_url); // or imageUrl
+    console.log(imageUrl);
+  }
+}
+
 
     const product = await Product.create({
       name,
@@ -146,7 +157,7 @@ export const createProductWithImages = async (req: Request, res: Response) => {
       description,
       category,
       quantity,
-      images,
+      images: Images,
       inStock: quantity > 0,
     });
 
